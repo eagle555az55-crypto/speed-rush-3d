@@ -1,0 +1,6 @@
+{
+  "appId": "com.example.speedrush3d",
+  "appName": "Speed Rush 3D",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
