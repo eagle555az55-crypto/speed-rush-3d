@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="az">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Speed Rush 3D — Demo</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#78b7d8;font-family:Arial,sans-serif;touch-action:none}
+canvas{display:block;width:100%;height:100%}
+#hud{position:fixed;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;color:white;font-weight:bold;text-shadow:0 2px 4px #000;background:#0007;padding:11px;border-radius:12px}
+#controls{position:fixed;bottom:22px;left:0;right:0;display:flex;justify-content:space-between;padding:0 22px}
+button{border:2px solid #fff9;border-radius:50%;width:76px;height:76px;background:#101827bb;color:white;font-size:30px}
+#cover{position:fixed;inset:0;background:#071525cc;display:grid;place-items:center;color:white;text-align:center;padding:22px}
+.card{background:#172b43;padding:24px;border-radius:20px;max-width:330px}
+#go{border:0;border-radius:12px;background:#ffbd28;color:#182338;font-size:18px;font-weight:bold;width:auto;height:auto;padding:13px 25px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><span>Xal: <b id="score">0</b></span><span>🪙 <b id="coins">0</b></span><span>Sürət: <b id="speed">0</b></span></div>
+<div id="controls"><button id="l">◀</button><button id="r">▶</button></div>
+<div id="cover"><div class="card"><h1>🏎️ SPEED RUSH 3D</h1><p>3D yarış demosu. Maneələrdən yayın, pulları topla!</p><button id="go">YARIŞA BAŞLA</button><p style="font-size:12px;color:#c5d3e2">Bu, ilkin brauzer demosudur; Play Store üçün hələ Android AAB faylı hazırlanmalıdır.</p></div></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+const renderer=new THREE.WebGLRenderer({canvas:document.querySelector('#c'),antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x87c9eb);scene.fog=new THREE.Fog(0x87c9eb,35,110);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,150);camera.position.set(0,6,11);
+scene.add(new THREE.HemisphereLight(0xffffff,0x42613c,2));
+const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(-5,12,8);scene.add(sun);
+const material=c=>new THREE.MeshStandardMaterial({color:c,roughness:.75});
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(160,180),material(0x398548));ground.rotation.x=-Math.PI/2;ground.position.set(0,-.12,-40);scene.add(ground);
+const road=new THREE.Mesh(new THREE.BoxGeometry(10,.16,130),material(0x30343b));road.position.set(0,0,-45);scene.add(road);
+for(const x of [-5.1,5.1]){const e=new THREE.Mesh(new THREE.BoxGeometry(.18,.2,130),material(0xffffff));e.position.set(x,.1,-45);scene.add(e)}
+const dashes=[];for(let z=12;z>-110;z-=8){const d=new THREE.Mesh(new THREE.BoxGeometry(.14,.04,3),material(0xffd52a));d.position.set(0,.11,z);scene.add(d);dashes.push(d)}
+function car(color){const g=new THREE.Group();const body=new THREE.Mesh(new THREE.BoxGeometry(1.55,.55,2.8),material(color));body.position.y=.7;g.add(body);const top=new THREE.Mesh(new THREE.BoxGeometry(1.12,.55,1.35),material(0x18374c));top.position.set(0,1.22,-.12);g.add(top);for(const x of [-.82,.82])for(const z of [-.9,.9]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.31,.31,.2,14),material(0x151515));w.rotation.z=Math.PI/2;w.position.set(x,.35,z);g.add(w)}return g}
+const player=car(0xe53935);player.position.z=4;scene.add(player);
+const hazards=[],tokens=[];const lanes=[-3,0,3];
+function hazard(z){const o=new THREE.Mesh(new THREE.BoxGeometry(1.3,1.1,1.1),material(0x2367d1));o.position.set(lanes[Math.floor(Math.random()*3)],.58,z);scene.add(o);hazards.push(o)}
+function token(z){const o=new THREE.Mesh(new THREE.TorusGeometry(.38,.12,10,18),material(0xffd21f));o.position.set(lanes[Math.floor(Math.random()*3)],1.25,z);o.rotation.x=Math.PI/2;scene.add(o);tokens.push(o)}
+function fill(){for(let i=0;i<7;i++){hazard(-20-i*17);token(-29-i*18)}}fill();
+let active=false,score=0,coins=0,speed=24,lane=1,target=0,prev=0;
+const $=s=>document.querySelector(s);function move(d){if(active){lane=Math.max(0,Math.min(2,lane+d));target=lanes[lane]}}
+$('#l').onpointerdown=e=>{e.preventDefault();move(-1)};$('#r').onpointerdown=e=>{e.preventDefault();move(1)};
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')move(-1);if(e.key==='ArrowRight')move(1)});
+function reset(){score=0;coins=0;speed=24;lane=1;target=0;player.position.x=0;hazards.forEach(x=>scene.remove(x));tokens.forEach(x=>scene.remove(x));hazards.length=0;tokens.length=0;fill();active=true;$('#cover').style.display='none';prev=performance.now()}
+$('#go').onclick=reset;
+function finish(){active=false;$('#cover').style.display='grid';$('.card').innerHTML=`<h1>YARIŞ BİTDİ</h1><p>Xal: ${score}<br>Toplanan pul: ${coins}</p><button id="again" style="border:0;border-radius:12px;background:#ffbd28;color:#182338;width:auto;height:auto;padding:13px 25px;font-size:18px;font-weight:bold">YENİDƏN OYNA</button><p style="font-size:12px">Demo versiya</p>`;$('#again').onclick=reset}
+function frame(t){requestAnimationFrame(frame);const dt=Math.min((t-prev)/1000||0,.04);prev=t;if(active){speed=Math.min(45,speed+dt*.3);score+=Math.floor(dt*speed*.35);player.position.x+=(target-player.position.x)*Math.min(1,dt*9);for(const d of dashes){d.position.z+=speed*dt;if(d.position.z>13)d.position.z-=120}for(const o of hazards){o.position.z+=speed*dt;if(o.position.z>8)o.position.z=-115-Math.random()*30;if(Math.abs(o.position.z-4)<1.2&&Math.abs(o.position.x-player.position.x)<1.15){finish();break}}for(const c of tokens){c.position.z+=speed*dt;c.rotation.y+=dt*3;if(c.position.z>8)c.position.z=-115-Math.random()*30;if(Math.abs(c.position.z-4)<1.2&&Math.abs(c.position.x-player.position.x)<1.15){coins++;score+=25;c.position.z=-160}}$('#score').textContent=score;$('#coins').textContent=coins;$('#speed').textContent=Math.round(speed)}camera.position.x+=(player.position.x*.2-camera.position.x)*.04;camera.lookAt(player.position.x*.18,.4,-8);renderer.render(scene,camera)}
+requestAnimationFrame(frame);addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script></body></html>
